@@ -47,6 +47,18 @@ pnpm dev
 # Open unity-ramp folder in Unity Hub
 ```
 
+## 🔧 Ramp Project Setup & Backend Integration
+
+For the complete process from Ramp project ID issuance to backend integration, please refer to the following documentation:
+
+📖 **[CROSS RAMP Integration Guide](https://github.com/to-nexus/cross-ramp-integration-sample/blob/master/GUIDE.md)**
+
+This guide includes:
+- Ramp project creation and configuration
+- Backend server integration methods
+- Authentication and payment flow implementation
+- Security settings and environment variable management
+
 ## 📄 License
 
 This demo collection is provided under the MIT License. See [LICENSE](../LICENSE) file for details. 
