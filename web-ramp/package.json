@@ -1,0 +1,32 @@
+{
+  "name": "@cross-ramp/web-demo",
+  "version": "1.0.0",
+  "description": "Web demo game for testing CROSS RAMP integration",
+  "private": true,
+  "scripts": {
+    "dev": "NEXT_PUBLIC_RAMP_PORT=8282 next dev -p 3001",
+    "build": "NEXT_PUBLIC_RAMP_PORT=8383 next build",
+    "start": "NEXT_PUBLIC_RAMP_PORT=8383 next start",
+    "lint": "next lint",
+    "test": "jest",
+    "clean": "rm -rf .next",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "zustand": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.0.0"
+  }
+}
