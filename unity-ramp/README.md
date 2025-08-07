@@ -1,6 +1,6 @@
 # CROSS RAMP Unity Demo
 
-A simple Unity demo showing how to integrate CROSS RAMP into your Unity game. Just drag and drop the CrossRampManager prefab and you're ready to go.
+A Unity demo showing how to integrate CROSS RAMP into your Unity game using the CrossRampManager component.
 
 ## 🎯 What is CROSS RAMP?
 
@@ -12,25 +12,16 @@ CROSS RAMP is a game asset exchange platform that allows players to:
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Unity 2022.3 LTS or later (2022.3.62f1 recommended)
+- Unity 2022.3 LTS or later
 - Unity WebView plugin
 
 ### Installation
 
 #### 1. Import Unity WebView Plugin
-```bash
-# Download from: https://github.com/gree/unity-webview/blob/master/dist/unity-webview.unitypackage
-# In Unity: Assets > Import Package > Custom Package > unity-webview.unitypackage
-```
+Download and import the Unity WebView plugin from the official repository.
 
 #### 2. Import CROSS RAMP Demo
-```bash
-# Clone the repository
-git clone https://github.com/crosstoken/cross-ramp.git
-
-# In Unity:
-# Assets > Import Package > Custom Package > demos/unity-ramp/dist/cross-ramp.unitypackage
-```
+Copy the demo files to your Unity project's Assets folder.
 
 #### 3. Open Demo Scene
 ```
@@ -38,8 +29,6 @@ Assets/Scenes/DemoScene.unity
 ```
 
 ## 🔧 Core Integration
-
-The entire integration is just adding the CrossRampManager prefab to your scene:
 
 ### 1. Add CrossRampManager to Scene
 
@@ -92,6 +81,8 @@ public void OnRampButtonClick()
 | `accessToken` | string | ✅ | User authentication token |
 | `sessionId` | string | ✅ | User session ID |
 | `language` | string | ❌ | Language code (en, ko, zh) |
+| `network` | string | ❌ | "testnet" or "mainnet". "mainnet" by default |
+| `platform` | string | ❌ | use "unity" for Unity project |
 
 ## 🔐 Authentication
 
@@ -115,7 +106,6 @@ public async Task<AuthData> LoginUser(string username, string password)
         var response = JsonUtility.FromJson<AuthResponse>(request.downloadHandler.text);
         return new AuthData
         {
-            projectId = response.projectId,
             accessToken = response.accessToken,
             sessionId = response.sessionId
         };
@@ -127,7 +117,6 @@ public async Task<AuthData> LoginUser(string username, string password)
 [System.Serializable]
 public class AuthResponse
 {
-    public string projectId;
     public string accessToken;
     public string sessionId;
 }
@@ -158,8 +147,6 @@ public class RampButton : MonoBehaviour
     }
 }
 ```
-
-
 
 ## 📱 Platform Setup
 
@@ -218,34 +205,6 @@ void TestRampIntegration()
 - [ ] Language parameter works
 - [ ] Deep linking returns to game
 
-## 🚀 Production Deployment
-
-### Build Settings
-
-```
-Player Settings:
-├── Company Name: Your Company
-├── Product Name: Your Game
-├── Bundle Identifier: com.yourcompany.yourgame
-└── Version: 1.0.0
-```
-
-### Platform-Specific Settings
-
-#### iOS Build
-```
-Target Device: iPhone + iPad
-Architecture: ARM64
-Deployment Target: iOS 12.0+
-```
-
-#### Android Build
-```
-Target API Level: API 24 (Android 7.0)
-Minimum API Level: API 21 (Android 5.0)
-Target Architectures: ARM64, ARMv7
-```
-
 ## 📚 API Reference
 
 ### CrossRampManager Methods
@@ -298,14 +257,6 @@ public string appScheme = "mygame://";
 - Check AndroidManifest.xml
 - Verify permissions
 - Test on physical device
-
-## 📞 Support
-
-- **Documentation**: [docs.crosstoken.io](https://docs.crosstoken.io)
-- **Unity WebView**: [github.com/gree/unity-webview](https://github.com/gree/unity-webview)
-- **Technical Support**: dev@crosstoken.io
-- **Unity Support**: unity@crosstoken.io
-- **GitHub Issues**: [github.com/crosstoken/cross-ramp/issues](https://github.com/crosstoken/cross-ramp/issues)
 
 ## 📄 License
 

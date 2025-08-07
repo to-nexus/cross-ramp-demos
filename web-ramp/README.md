@@ -30,9 +30,9 @@ The entire CROSS RAMP integration boils down to this:
 ### 1. Generate URL with Query Parameters
 
 ```javascript
-const generateRampUrl = (isTestnet: boolean = false): string => {
+const generateRampUrl = (isTest: boolean = false): string => {
   const rampHost = process.env.NEXT_PUBLIC_RAMP_HOST || 'ramp.crosstoken.io';
-  const rampBaseUrl = isTestnet ? `https://stg-${rampHost}` : `https://${rampHost}`;
+  const rampBaseUrl = isTest ? `https://stg-${rampHost}` : `https://${rampHost}`;
   
   const catalogUrlObj = new URL('/catalog', rampBaseUrl);
   const params = new URLSearchParams({
@@ -88,6 +88,7 @@ document.getElementById('ramp-button').onclick = openCrossRamp;
 | `lang` | string | ❌ | Language code (en, ko, zh) |
 | `platform` | string | ❌ | Platform identifier (web, mobile) |
 | `timestamp` | number | ❌ | Unix timestamp |
+| `network` | string | ❌ | "mainnet" or "testnet". Default is "mainnet" |
 
 ## 🔐 Authentication
 

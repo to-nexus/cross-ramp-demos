@@ -276,11 +276,18 @@ public class CrossRampManager : MonoBehaviour
             string encodedAccessToken = UnityWebRequest.EscapeURL(accessToken);
             string encodedLanguage = UnityWebRequest.EscapeURL(string.IsNullOrEmpty(language) ? "en" : language);
             string encodedPlatform = UnityWebRequest.EscapeURL("unity");
+            string encodedNetwork = UnityWebRequest.EscapeURL("testnet");
             
             long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             string encodedTimestamp = UnityWebRequest.EscapeURL(timestamp.ToString());
             
-            string queryParams = $"?projectId={encodedProjectId}&sessionId={encodedSessionId}&accessToken={encodedAccessToken}&lang={encodedLanguage}&platform={encodedPlatform}&timestamp={encodedTimestamp}";
+            string queryParams = $"?projectId={encodedProjectId}
+                &sessionId={encodedSessionId}
+                &accessToken={encodedAccessToken}
+                &lang={encodedLanguage}
+                &platform={encodedPlatform}
+                &timestamp={encodedTimestamp}
+                &network={encodedNetwork}";
             
             if (!string.IsNullOrEmpty(appScheme))
             {

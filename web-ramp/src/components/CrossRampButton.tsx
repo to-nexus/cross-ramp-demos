@@ -22,9 +22,9 @@ export function CrossRampButton({
   // TODO: This is a temporary solution to get the ramp URL for public demo project.
   // This code block(generateRampUrl) is different from the one in original cross-ramp repo
   // Direct URL method with query parameters
-  const generateRampUrl = (isTestnet: boolean = false): string => {
+  const generateRampUrl = (isTest: boolean = false): string => {
     const rampHost = process.env.NEXT_PUBLIC_RAMP_HOST || 'ramp.crosstoken.io';
-    const rampBaseUrl = isTestnet ? `https://stg-${rampHost}` : `https://${rampHost}`;
+    const rampBaseUrl = isTest ? `https://stg-${rampHost}` : `https://${rampHost}`;
     
     const catalogUrlObj = new URL('/catalog', rampBaseUrl);
     const params = new URLSearchParams({
@@ -33,7 +33,8 @@ export function CrossRampButton({
       accessToken,
       lang: language,
       platform: 'web',
-      timestamp: Math.floor(Date.now() / 1000).toString()
+      timestamp: Math.floor(Date.now() / 1000).toString(),
+      network: 'testnet'  // use "testnet" or "mainnet". Default is "mainnet" and it is for production.
     });
     
     // Add app scheme if provided (for deep linking back to mobile app)
