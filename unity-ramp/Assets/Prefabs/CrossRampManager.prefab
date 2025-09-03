@@ -45,6 +45,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   projectId: nexus-ramp-v1
-  rampBaseUrl: https://ramp.crosstoken.io
+  rampBaseUrl: localhost:8282
   appScheme: 
   crossRampButton: {fileID: 0}

@@ -158,6 +158,7 @@ public class CrossRampManager : MonoBehaviour
         
         isWebViewOpen = false;
         StopPolling();
+        ClearRemainingMessages(); // 닫을 때도 메시지 정리
         HideWebView();
         CleanupUI();
         Debug.Log("[CrossRampManager] WebView closed successfully");
@@ -343,13 +344,11 @@ public class CrossRampManager : MonoBehaviour
         // 웹뷰가 완전히 로드될 때까지 잠시 대기
         yield return new WaitForSeconds(2f);
         
+        // 폴링 시작 전에 이전 세션의 잔여 메시지 정리
+        ClearPreviousSessionMessages();
+        
         while (isWebViewOpen)
         {
-            if (!isWebViewOpen) 
-            {
-                Debug.Log("[CrossRampManager] WebView closed, stopping polling");
-                break;
-            }
             
             try
             {
@@ -359,16 +358,31 @@ public class CrossRampManager : MonoBehaviour
                             var message = localStorage.getItem('cross-ramp-message');
                             if (message) {
                                 localStorage.removeItem('cross-ramp-message');
-                                var payload = JSON.stringify({
-                                    type: 'cross-ramp-action',
-                                    action: 'close',
-                                    timestamp: Date.now()
-                                });
-                                if (typeof Unity !== 'undefined' && typeof Unity.call === 'function') {
-                                    Unity.call(payload);
+                                
+                                // 원본 메시지 내용 확인
+                                var originalMessage;
+                                try {
+                                    originalMessage = JSON.parse(message);
+                                } catch(parseError) {
+                                    console.log('Could not parse message as JSON, treating as close signal:', message);
+                                    originalMessage = { action: 'close' };
                                 }
-                                if (typeof window.unityInstance !== 'undefined' && window.unityInstance.SendMessage) {
-                                    window.unityInstance.SendMessage('CrossRampManager', 'OnMessageReceived', payload);
+                                
+                                // close action인 경우에만 Unity로 전송
+                                if (originalMessage && originalMessage.action === 'close') {
+                                    var payload = JSON.stringify({
+                                        type: 'cross-ramp-action',
+                                        action: 'close',
+                                        timestamp: Date.now()
+                                    });
+                                    if (typeof Unity !== 'undefined' && typeof Unity.call === 'function') {
+                                        Unity.call(payload);
+                                    }
+                                    if (typeof window.unityInstance !== 'undefined' && window.unityInstance.SendMessage) {
+                                        window.unityInstance.SendMessage('CrossRampManager', 'OnMessageReceived', payload);
+                                    }
+                                } else {
+                                    console.log('Ignoring non-close message:', originalMessage);
                                 }
                             }
                         } catch(e) {
@@ -392,6 +406,74 @@ public class CrossRampManager : MonoBehaviour
         
         Debug.Log("[CrossRampManager] Stopped localStorage polling");
     }
+    
+    void ClearPreviousSessionMessages()
+    {
+        Debug.Log("[CrossRampManager] Clearing previous session messages from localStorage");
+        
+        string clearJs = @"
+            (function() {
+                try {
+                    var existingMessage = localStorage.getItem('cross-ramp-message');
+                    if (existingMessage) {
+                        console.log('[CrossRamp] Clearing previous session message:', existingMessage);
+                        localStorage.removeItem('cross-ramp-message');
+                        console.log('[CrossRamp] Previous session message cleared');
+                    } else {
+                        console.log('[CrossRamp] No previous session message found');
+                    }
+                } catch(e) {
+                    console.error('[CrossRamp] Error clearing previous session messages:', e);
+                }
+            })();
+        ";
+        
+        if (webViewObject != null)
+        {
+            try
+            {
+                webViewObject.EvaluateJS(clearJs);
+                Debug.Log("[CrossRampManager] Previous session cleanup executed");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[CrossRampManager] Error clearing previous session: {e.Message}");
+            }
+        }
+    }
+    
+    void ClearRemainingMessages()
+    {
+        Debug.Log("[CrossRampManager] Clearing remaining messages on webview close");
+        
+        string clearJs = @"
+            (function() {
+                try {
+                    var existingMessage = localStorage.getItem('cross-ramp-message');
+                    if (existingMessage) {
+                        console.log('[CrossRamp] Clearing remaining message on close:', existingMessage);
+                        localStorage.removeItem('cross-ramp-message');
+                        console.log('[CrossRamp] Remaining message cleared');
+                    }
+                } catch(e) {
+                    console.error('[CrossRamp] Error clearing remaining messages:', e);
+                }
+            })();
+        ";
+        
+        if (webViewObject != null)
+        {
+            try
+            {
+                webViewObject.EvaluateJS(clearJs);
+                Debug.Log("[CrossRampManager] Remaining messages cleanup executed");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[CrossRampManager] Error clearing remaining messages: {e.Message}");
+            }
+        }
+    }
     #endregion
 
     #region WebView Callbacks
@@ -407,9 +489,9 @@ public class CrossRampManager : MonoBehaviour
                 var messageData = JsonUtility.FromJson<CrossRampMessage>(msg);
                 Debug.Log($"[CrossRampManager] Parsed message data: type={messageData?.type}, action={messageData?.action}");
                 
-                if (messageData != null && messageData.action == "close")
+                if (messageData != null && messageData.type == "cross-ramp-action" && messageData.action == "close")
                 {
-                    Debug.Log("[CrossRampManager] Received close action - calling CloseWebView()");
+                    Debug.Log("[CrossRampManager] Received valid close action - calling CloseWebView()");
                     CloseWebView();
                 }
             }
@@ -417,11 +499,6 @@ public class CrossRampManager : MonoBehaviour
             {
                 Debug.LogError($"[CrossRampManager] Failed to parse message: {e.Message}");
             }
-        }
-        else if (msg.Contains("close") || msg.Contains("Close"))
-        {
-            Debug.Log("[CrossRampManager] Detected close message - calling CloseWebView()");
-            CloseWebView();
         }
     }
     
@@ -451,16 +528,35 @@ public class CrossRampManager : MonoBehaviour
         {
             Debug.Log($"[CrossRampManager] Processing message: {messageData}");
             
+            // 빈 메시지 체크
+            if (string.IsNullOrEmpty(messageData))
+            {
+                Debug.LogWarning("[CrossRampManager] Received empty message, ignoring");
+                return;
+            }
+            
             var message = JsonUtility.FromJson<CrossRampMessage>(messageData);
             if (message != null)
             {
                 Debug.Log($"[CrossRampManager] Parsed message: type={message.type}, action={message.action}");
                 
-                if (message.type == "cross-ramp-action" && message.action == "close")
+                // 유효한 cross-ramp-action이면서 close action인 경우에만 처리
+                if (!string.IsNullOrEmpty(message.type) && 
+                    !string.IsNullOrEmpty(message.action) &&
+                    message.type == "cross-ramp-action" && 
+                    message.action == "close")
                 {
-                    Debug.Log("[CrossRampManager] Close action detected - closing WebView");
+                    Debug.Log("[CrossRampManager] Valid close action detected - closing WebView");
                     CloseWebView();
                 }
+                else
+                {
+                    Debug.Log($"[CrossRampManager] Ignoring message - not a valid close action: type={message.type}, action={message.action}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[CrossRampManager] Failed to parse message as CrossRampMessage");
             }
         }
         catch (System.Exception e)
