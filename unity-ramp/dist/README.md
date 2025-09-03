@@ -19,7 +19,7 @@ The main Unity package containing:
 2. **In Unity**: `Assets > Import Package > Custom Package`
 3. **Select** the downloaded package file
 4. **Import All** (default selections are correct)
-5. **Install dependency**: Unity WebView plugin from [gree/unity-webview](https://github.com/gree/unity-webview)
+5. **Install dependency**: Unity WebView plugin from [gree/unity-webview](https://github.com/gree/unity-webview.git?path=/dist/package)
 
 ### Quick Start
 1. **Drag** `CrossRampManager.prefab` to your scene
