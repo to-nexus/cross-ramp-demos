@@ -1,4 +1,5 @@
 using UnityEngine;
+using CrossRamp; // CrossRamp namespace 사용
 
 /// <summary>
 /// CROSS RAMP Authentication Example Code
