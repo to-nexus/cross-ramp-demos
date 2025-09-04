@@ -59,6 +59,41 @@ public class CrossRampManager : MonoBehaviour
     #region Properties
     public bool IsWebViewOpen => isWebViewOpen;
     #endregion
+    
+    #region Data Structures
+    /// <summary>
+    /// Options for opening CROSS RAMP with specific parameters
+    /// </summary>
+    [System.Serializable]
+    public class CrossRampOptions
+    {
+        [Tooltip("Target page: 'catalog' or 'exchange'")]
+        public string targetPage = "catalog";
+        
+        [Tooltip("RampPair ID (required for exchange page)")]
+        public string rampPairId = "";
+        
+        [Tooltip("Action: 'mint', 'burn', or 'reclaim' (required for exchange page)")]
+        public string action = "";
+        
+        [Tooltip("Item UID for seamless selection (optional)")]
+        public string uid = "";
+        
+        [Tooltip("Language code")]
+        public string language = "en";
+
+        public CrossRampOptions() { }
+        
+        public CrossRampOptions(string targetPage, string rampPairId = "", string action = "", string uid = "", string language = "en")
+        {
+            this.targetPage = targetPage;
+            this.rampPairId = rampPairId;
+            this.action = action;
+            this.uid = uid;
+            this.language = language;
+        }
+    }
+    #endregion
 
     #region Unity Lifecycle
     void Awake()
@@ -125,9 +160,23 @@ public class CrossRampManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Open CROSS RAMP
+    /// Open CROSS RAMP with specified parameters
     /// </summary>
-    public void OpenCrossRamp(string language = "en")
+    /// <param name="targetPage">Target page: 'catalog' or 'exchange'</param>
+    /// <param name="rampPairId">RampPair ID (required for exchange page)</param>
+    /// <param name="action">Action: 'mint', 'burn', or 'reclaim' (required for exchange page)</param>
+    /// <param name="uid">Item UID for seamless selection (optional)</param>
+    /// <param name="language">Language code (default: 'en')</param>
+    public void OpenCrossRamp(string targetPage = "catalog", string rampPairId = "", string action = "", string uid = "", string language = "en")
+    {
+        var options = new CrossRampOptions(targetPage, rampPairId, action, uid, language);
+        OpenCrossRampWithOptions(options);
+    }
+
+    /// <summary>
+    /// Open CROSS RAMP with specific options
+    /// </summary>
+    public void OpenCrossRampWithOptions(CrossRampOptions options)
     {
         if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(sessionId))
         {
@@ -139,9 +188,38 @@ public class CrossRampManager : MonoBehaviour
         {
             Debug.LogWarning("[CrossRampManager] Using demo credentials! Replace with real values via SetUserCredentials() after user login.");
         }
-        
-        StartCoroutine(OpenCrossRampCoroutine(language));
+
+        // Validate exchange page requirements
+        if (options.targetPage == "exchange")
+        {
+            if (string.IsNullOrEmpty(options.rampPairId))
+            {
+                Debug.LogError("[CrossRampManager] rampPairId is required for exchange page!");
+                return;
+            }
+            if (string.IsNullOrEmpty(options.action))
+            {
+                Debug.LogError("[CrossRampManager] action is required for exchange page!");
+                return;
+            }
+            if (options.action != "mint" && options.action != "burn" && options.action != "reclaim")
+            {
+                Debug.LogError("[CrossRampManager] action must be 'mint', 'burn', or 'reclaim'!");
+                return;
+            }
         }
+        
+        StartCoroutine(OpenCrossRampCoroutine(options));
+    }
+
+    /// <summary>
+    /// Open CROSS RAMP exchange page directly (convenience method)
+    /// </summary>
+    public void OpenExchangePage(string rampPairId, string action, string uid = "", string language = "en")
+    {
+        var options = new CrossRampOptions("exchange", rampPairId, action, uid, language);
+        OpenCrossRampWithOptions(options);
+    }
 
     /// <summary>
     /// Close WebView
@@ -170,6 +248,8 @@ public class CrossRampManager : MonoBehaviour
     public void OnButtonClick()
     {
         OpenCrossRamp();
+        // OpenCrossRamp("exchange", "1001", "mint", "sword_001_uid_002", "en");
+        // Test direct exchange page access with seamless UID selection
     }
     #endregion
 
@@ -197,7 +277,7 @@ public class CrossRampManager : MonoBehaviour
         }
     }
     
-    IEnumerator OpenCrossRampCoroutine(string language = "en")
+    IEnumerator OpenCrossRampCoroutine(CrossRampOptions options)
     {
         Debug.Log($"[CrossRampManager] Opening CROSS RAMP");
         
@@ -207,7 +287,7 @@ public class CrossRampManager : MonoBehaviour
         isWebViewOpen = false;
         yield return new WaitForEndOfFrame();
         
-        string frontendUrl = GenerateRampFrontendUrl(language);
+        string frontendUrl = GenerateRampFrontendUrl(options);
         
         if (webViewObject == null)
         {
@@ -268,29 +348,52 @@ public class CrossRampManager : MonoBehaviour
     #endregion
 
     #region URL Generation
-    string GenerateRampFrontendUrl(string language = "en")
+    string GenerateRampFrontendUrl(CrossRampOptions options)
     {
         try
         {
             string encodedProjectId = UnityWebRequest.EscapeURL(projectId);
             string encodedSessionId = UnityWebRequest.EscapeURL(sessionId);
             string encodedAccessToken = UnityWebRequest.EscapeURL(accessToken);
-            string encodedLanguage = UnityWebRequest.EscapeURL(string.IsNullOrEmpty(language) ? "en" : language);
+            string encodedLanguage = UnityWebRequest.EscapeURL(string.IsNullOrEmpty(options.language) ? "en" : options.language);
             string encodedPlatform = UnityWebRequest.EscapeURL("unity");
             string encodedNetwork = UnityWebRequest.EscapeURL("testnet");
             
             long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             string encodedTimestamp = UnityWebRequest.EscapeURL(timestamp.ToString());
             
+            // Build base query parameters (always required)
             string queryParams = $"?projectId={encodedProjectId}&sessionId={encodedSessionId}&accessToken={encodedAccessToken}&lang={encodedLanguage}&platform={encodedPlatform}&timestamp={encodedTimestamp}&network={encodedNetwork}";
             
+            // Add appScheme if available
             if (!string.IsNullOrEmpty(appScheme))
             {
                 string encodedAppScheme = UnityWebRequest.EscapeURL(appScheme);
                 queryParams += $"&appScheme={encodedAppScheme}";
             }
-            
-            string finalUrl = rampBaseUrl + "/catalog/" + queryParams;
+
+            // Build URL based on target page
+            string finalUrl;
+            if (options.targetPage == "exchange")
+            {
+                // Exchange page: /exchange/{rampPairId}?action={action}&uid={uid}&...
+                string encodedAction = UnityWebRequest.EscapeURL(options.action);
+                queryParams += $"&action={encodedAction}";
+
+                // Add uid if provided
+                if (!string.IsNullOrEmpty(options.uid))
+                {
+                    string encodedUid = UnityWebRequest.EscapeURL(options.uid);
+                    queryParams += $"&uid={encodedUid}";
+                }
+
+                finalUrl = rampBaseUrl + $"/exchange/{options.rampPairId}" + queryParams;
+            }
+            else
+            {
+                // Default to catalog page
+                finalUrl = rampBaseUrl + "/catalog" + queryParams;
+            }
             
             #if UNITY_EDITOR
             Debug.Log($"[CrossRampManager] Generated URL for browser testing: {finalUrl}");
