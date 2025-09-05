@@ -60,6 +60,9 @@ namespace CrossRamp
         
         #region Properties
         public bool IsWebViewOpen => isWebViewOpen;
+        
+        // 웹뷰 닫힘 이벤트
+        public static System.Action OnWebViewClosed;
         #endregion
         
         #region Data Structures
@@ -242,6 +245,9 @@ namespace CrossRamp
             HideWebView();
             CleanupUI();
             Debug.Log("[CrossRampManager] WebView closed successfully");
+            
+            // 웹뷰 닫힘 이벤트 발생
+            OnWebViewClosed?.Invoke();
         }
         
         /// <summary>
